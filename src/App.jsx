@@ -22,7 +22,7 @@ const App = () => {
     const fetchBreweries = async () => {
       setLoading(true); // Set loading to true before fetching
       try {
-        const response = await fetch(`https://api.openbrewerydb.org/v1/breweries?by_country=United States&per_page=50&page=${page}`);
+        const response = await fetch(`https://api.openbrewerydb.org/v1/breweries?by_country=United States&per_page=200&page=${page}`);
         const data = await response.json();
         
         // Remove duplicates based on brewery id
