@@ -103,6 +103,7 @@ const App = () => {
             <h2>{brewery.name}</h2>
             <p>{brewery.brewery_type}</p>
             <p>{brewery.city}, {brewery.state}</p>
+            <p>{brewery.phone}</p>
             <button onClick={() => window.open(brewery.website_url)}>Visit Website</button>
           </div>
         ))}
