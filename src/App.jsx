@@ -1,119 +1,133 @@
+// App.js
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import BreweryDetail from './BreweryDetail.jsx';
 
 const App = () => {
-  const [breweries, setBreweries] = useState([]); // State to hold breweries
-  const [loading, setLoading] = useState(true); // Loading state
-  const [error, setError] = useState(null); // Error state
-  const [searchTerm, setSearchTerm] = useState(''); // Search term
-  const [filterType, setFilterType] = useState(''); // Filter by type
-  const [stateFilter, setStateFilter] = useState(''); // Filter by state
-  const [page, setPage] = useState(1); // Current page for pagination
-
-  const US_STATES = [
-    "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", 
-    "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", 
-    "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", 
-    "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", 
-    "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", 
-    "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"
-  ];
+  const [breweries, setBreweries] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState('');
+  const [stateFilter, setStateFilter] = useState('');
+  const [page, setPage] = useState(1);
+  const [showTypeChart, setShowTypeChart] = useState(true);
 
   useEffect(() => {
     const fetchBreweries = async () => {
-      setLoading(true); // Set loading to true before fetching
+      setLoading(true);
       try {
         const response = await fetch(`https://api.openbrewerydb.org/v1/breweries?by_country=United States&per_page=200&page=${page}`);
         const data = await response.json();
-        
-        // Remove duplicates based on brewery id
-        setBreweries(prevBreweries => {
-          const newBreweries = data.filter(brewery => 
-            !prevBreweries.some(existingBrewery => existingBrewery.id === brewery.id)
-          );
-          return [...prevBreweries, ...newBreweries];
-        });
-
-        setLoading(false); // Set loading to false after fetching
+        setBreweries(prevBreweries => [...prevBreweries, ...data]);
+        setLoading(false);
       } catch (err) {
         console.error("Error fetching breweries:", err);
         setError(err);
         setLoading(false);
       }
     };
-
     fetchBreweries();
-  }, [page]); // Re-fetch when page number changes
+  }, [page]);
 
-  if (loading && page === 1) {
-    return <div>Loading...</div>; // Show loading text
-  }
+  if (loading && page === 1) return <div>Loading...</div>;
+  if (error) return <div>Error fetching data.</div>;
 
-  if (error) {
-    return <div>Error fetching data.</div>; // Show error message
-  }
+  const filteredBreweries = breweries.filter(brewery =>
+    brewery.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (filterType === '' || brewery.brewery_type === filterType) &&
+    (stateFilter === '' || brewery.state === stateFilter)
+  );
 
-  // Filter breweries based on search term, type, and state
-  const filteredBreweries = breweries
-    .filter(brewery => 
-      brewery.name.toLowerCase().includes(searchTerm.toLowerCase()) && 
-      (filterType === '' || brewery.brewery_type === filterType) &&
-      (stateFilter === '' || brewery.state === stateFilter)
-    );
+  const typeData = filteredBreweries.reduce((acc, brewery) => {
+    const type = brewery.brewery_type;
+    acc[type] = (acc[type] || 0) + 1;
+    return acc;
+  }, {});
+
+  const stateData = filteredBreweries.reduce((acc, brewery) => {
+    const state = brewery.state;
+    acc[state] = (acc[state] || 0) + 1;
+    return acc;
+  }, {});
+
+  const typeChartData = Object.keys(typeData).map(key => ({ type: key, count: typeData[key] }));
+  const stateChartData = Object.keys(stateData).map(key => ({ state: key, count: stateData[key] }));
 
   return (
-    <div>
-      <h1>Brewery Dashboard</h1>
-      
-      {/* Search Bar */}
-      <input 
-        type="text" 
-        placeholder="Search breweries..." 
-        onChange={(e) => setSearchTerm(e.target.value)} 
-      />
+    <Router>
+      <div>
+        <h1>Brewery Dashboard</h1>
 
-      {/* Filter by Brewery Type */}
-      <label>Filter by type:</label>
-      <select onChange={(e) => setFilterType(e.target.value)} value={filterType}>
-        <option value="">All</option>
-        <option value="micro">Micro</option>
-        <option value="nano">Nano</option>
-        <option value="regional">Regional</option>
-        <option value="brewpub">Brewpub</option>
-        <option value="large">Large</option>
-        <option value="planning">Planning</option>
-        <option value="bar">Bar</option>
-        <option value="contract">Contract</option>
-        <option value="proprietor">Proprietor</option>
-        <option value="closed">Closed</option>
-      </select>
+        <input type="text" placeholder="Search breweries..." onChange={(e) => setSearchTerm(e.target.value)} />
 
-      {/* Filter by State */}
-      <label>Filter by state:</label>
-      <select onChange={(e) => setStateFilter(e.target.value)} value={stateFilter}>
-        <option value="">All</option>
-        {US_STATES.map(state => (
-          <option key={state} value={state}>{state}</option>
-        ))}
-      </select>
+        <label>Filter by type:</label>
+        <select onChange={(e) => setFilterType(e.target.value)} value={filterType}>
+          <option value="">All</option>
+          <option value="micro">Micro</option>
+          <option value="nano">Nano</option>
+          <option value="regional">Regional</option>
+          <option value="brewpub">Brewpub</option>
+          <option value="large">Large</option>
+          <option value="planning">Planning</option>
+          <option value="bar">Bar</option>
+          <option value="contract">Contract</option>
+          <option value="proprietor">Proprietor</option>
+          <option value="closed">Closed</option>
+        </select>
 
-      {/* List of Breweries */}
-      <div className='brews'>
-        {filteredBreweries.map(brewery => (
-          <div key={brewery.id} className='brewsco' id={brewery.brewery_type}>
-            <h2>{brewery.name}</h2>
-            <p>{brewery.brewery_type}</p>
-            <p>{brewery.city}, {brewery.state}</p>
-            <p>{brewery.phone}</p>
-            <button onClick={() => window.open(brewery.website_url)}>Visit Website</button>
-          </div>
-        ))}
+        <label>Filter by state:</label>
+        <select onChange={(e) => setStateFilter(e.target.value)} value={stateFilter}>
+          <option value="">All</option>
+          {/* Generate state options dynamically */}
+        </select>
+
+        {/* Data Visualization Toggle */}
+        <button onClick={() => setShowTypeChart(!showTypeChart)}>
+          {showTypeChart ? 'Show State Distribution' : 'Show Type Distribution'}
+        </button>
+
+        {/* Data Visualization */}
+        {showTypeChart ? (
+          <BarChart width={500} height={300} data={typeChartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="type" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="count" fill="#8884d8" />
+          </BarChart>
+        ) : (
+          <BarChart width={500} height={300} data={stateChartData}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="state" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="count" fill="#82ca9d" />
+          </BarChart>
+        )}
+
+        {/* List of Breweries with Links */}
+        <div className="brews">
+          {filteredBreweries.map(brewery => (
+            <div key={brewery.id} className="brewsco" id={brewery.brewery_type}>
+              <h2><Link to={`/brewery/${brewery.id}`}>{brewery.name}</Link></h2>
+              <p>{brewery.brewery_type}</p>
+              <p>{brewery.city}, {brewery.state}</p>
+              <p>{brewery.phone}</p>
+              <button onClick={() => window.open(brewery.website_url)}>Visit Website</button>
+            </div>
+          ))}
+        </div>
+
+        <button onClick={() => setPage(prevPage => prevPage + 1)}>Load More Breweries</button>
+
+        {/* Define Routes */}
+        <Routes>
+          <Route path="/brewery/:id" element={<BreweryDetail />} />
+        </Routes>
       </div>
-
-      {/* Load More Breweries Button */}
-      <button className="load" onClick={() => setPage(prevPage => prevPage + 1)}>
-        Load More Breweries
-      </button>
-    </div>
+    </Router>
   );
 };
 
