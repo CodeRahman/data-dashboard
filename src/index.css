@@ -85,7 +85,17 @@ button:focus-visible {
   
 }
 
+.brewco{
+  width: 500px;
+  background-color: #FFFFFF;
+  box-shadow: 0 15px 25px #817c7c33;
+  border-radius: 10px;
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 20px;
+}
 .load{
   background-color: blue;
   color: white;
 }
+
